@@ -1,5 +1,6 @@
 CREATE DATABASE DDL_DML_DQL;
 DROP DATABASE DDL_DML_DQL;
+SHOW DATABASES;
 USE DDL_DML_DQL;
 SHOW TABLES;
 DROP TABLE usuarios;
@@ -75,7 +76,7 @@ WHERE livro_id = 2
 
 SELECT titulo, autor
 FROM livros
-WHERE dispobinilidade = TRUE
+WHERE disponibilidade = TRUE
 ;
 
 -- 2. Liste todos os usuários da biblioteca, incluindo nome e endereço de e-mail.
@@ -86,18 +87,98 @@ FROM usuarios
 
 -- 3. Liste os livros que nunca foram emprestados.
 
-SELECT titulo, data_emprestimo
-FROM 
+SELECT l.titulo
+, 	   l.autor
+FROM livros l 
+LEFT JOIN emprestimos e ON l.livro_id = e.livro_id
+WHERE e.emprestimo_id IS NULL
+;
 
 -- 4. Encontre o livro mais emprestado da biblioteca (aquele com o maior número de empréstimos registrados).
+
+SELECT l.titulo
+, 	   COUNT(e.emprestimo_id) AS total_emprestimos
+FROM livros l
+JOIN emprestimos e ON l.livro_id = e.livro_id
+GROUP BY l.titulo
+ORDER BY total_emprestimos DESC
+LIMIT 1
+;
+
 -- 5. Encontre o usuário que mais empresta livros.
+
+SELECT u.nome
+,	   COUNT(e.emprestimo_id) AS usuario_emprestimo
+FROM usuarios u 
+JOIN emprestimos e ON u.usuario_id = e.usuario_id
+GROUP BY u.nome
+ORDER BY usuario_emprestimo DESC
+LIMIT 1 
+;
+
 -- 6. Encontre os usuários que têm livros atrasados (a data de devolução prevista já passou).
+
+SELECT u.nome
+,	   l.titulo
+,	   e.data_devolucao_prevista 
+FROM emprestimos e 
+JOIN usuarios u ON e.usuario_id = u.usuario_id 
+JOIN livros l ON e.livro_id = l.livro_id
+WHERE e.devolucao = FALSE AND e.data_devolucao_prevista < CURDATE()
+;
+
 -- 7. Calcule a quantidade total de livros emprestados no momento.
+
+SELECT COUNT(*) AS total_livros_emprestados 
+FROM livros l 
+WHERE disponibilidade = FALSE
+;
+
+
 -- 8. Calcule o número médio de dias que um livro é emprestado.
+
+SELECT AVG(DATEDIFF(e.data_devolucao_prevista, e.data_emprestimo)) 
+FROM emprestimos e 
+WHERE devolucao = TRUE 
+;
+
 -- 9. Liste todos os livros emprestados por um usuário específico, incluindo o título do livro e a data de empréstimo.
+
+SELECT u.nome
+,	   l.titulo
+,	   e.data_emprestimo
+FROM emprestimos e 
+JOIN usuarios u ON e.usuario_id = u.usuario_id 
+JOIN livros l ON e.livro_id = l.livro_id
+WHERE u.usuario_id = 1
+;
+
 -- 10. Liste todos os usuários que têm livros emprestados no momento, incluindo o nome do usuário e o título do
 -- livro.
+
+SELECT u.nome
+,	   l.titulo
+FROM emprestimos e 
+JOIN livros l ON e.livro_id = l.livro_id
+JOIN usuarios u ON e.usuario_id = u.usuario_id
+WHERE e.devolucao = FALSE 
+;
+
 -- 11. Liste os usuários que nunca emprestaram um livro.
+
+SELECT u.nome 
+FROM usuarios u
+LEFT JOIN emprestimos e ON e.usuario_id = u.usuario_id
+WHERE e.emprestimo_id IS NULL
+;
+
 -- 12. Liste o autor que teve o maior número de livros emprestados, juntamente com o número de empréstimos
 -- para cada autor.
 
+SELECT l.autor 
+,	   COUNT(e.emprestimo_id) AS emprestimos 
+FROM livros l 
+LEFT JOIN emprestimos e ON l.livro_id = e.livro_id
+GROUP BY l.autor
+ORDER BY emprestimos DESC
+;
